@@ -27,35 +27,25 @@ jobs:
     - name: Build React app
       run: npm run build
 
-  BuildContainer:  
-    name: Build The Container
-    runs-on: ubuntu-22.04
 
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+    - name: Build Docker image
+      run: |
+        echo $pwd
+        ls
+        docker build -t weather-aqi-app:latest .
+        docker save weather-aqi-app:latest -o weather-aqi-app-image.tar
 
-    steps:
-
-      - name: Build Docker image
-        run: |
-          echo $pwd
-          ls
-          docker build -t weather-aqi-app:latest .
-          docker save weather-aqi-app:latest -o weather-aqi-app-image.tar
-
-      - name: Save Docker image
-        uses: actions/upload-artifact@v2
-        with:
-          name: weather-aqi-app-image
-          path: |
-            ./weather-aqi-app-image.tar
+    - name: Save Docker image
+      uses: actions/upload-artifact@v2
+      with:
+        name: weather-aqi-app-image
+        path: |
+          ./weather-aqi-app-image.tar
 
   TrivyImageScan:
     name: Scanning your Container
     runs-on: ubuntu-22.04
-    needs: BuildContainer
+    needs: build
 
     steps:
       - name: Get current timestamp
