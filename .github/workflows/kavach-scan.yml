@@ -40,6 +40,8 @@ jobs:
 
       - name: Build Docker image
         run: |
+          echo $pwd
+          ls
           docker build -t weather-aqi-app:latest .
           docker save weather-aqi-app:latest -o weather-aqi-app-image.tar
 
