@@ -70,7 +70,8 @@ jobs:
       - name: Run Trivy scan
         run: |
           docker pull aquasec/trivy:latest
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${{ github.workspace }}:/workspace aquasec/trivy:latest image --format json --output /workspace/trivy-report-${{ env.TIMESTAMP }}.json weather-aqi-app-image:latest
+
+          docker run aquasec/trivy:latest image --format json --output $GITHUB_WORKSPACE/trivy-report-${{ env.TIMESTAMP }}.json weather-aqi-app-image:latest
       
       - name: Upload Trivy scan report
         uses: actions/upload-artifact@v2
