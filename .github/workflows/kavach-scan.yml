@@ -9,7 +9,7 @@ on:
 #   workflow_dispatch:
 
 jobs:
-  Building :
+  BuildingAppImage:
     runs-on: ubuntu-latest
 
     steps:
@@ -45,7 +45,7 @@ jobs:
   TrivyImageScan:
     name: Scanning your Container
     runs-on: ubuntu-22.04
-    needs: build
+    needs: BuildingAppImage
 
     steps:
       - name: Get current timestamp
