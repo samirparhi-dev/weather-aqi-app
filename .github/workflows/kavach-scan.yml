@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Get current timestamp
+      id: timestamp
+      run: echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+
     - name: Checkout repository
       uses: actions/checkout@v2
 
@@ -32,61 +36,34 @@ jobs:
       run: |
         echo $pwd
         ls
-        docker build -t weather-aqi-app-image:latest .
-        docker save weather-aqi-app-image:latest -o weather-aqi-app-image.tar
+        docker build -t weather-aqi-app:latest .
+        docker save weather-aqi-app:latest -o weather-aqi-app.tar
 
-    - name: Save Docker image
+    - name: Run Container Scan
+      run: |
+        docker pull aquasec/trivy:latest
+
+        docker run aquasec/trivy:latest image --format json --output $GITHUB_WORKSPACE/trivy-report-${{ env.TIMESTAMP }}.json weather-aqi-app:latest
+
+    - name: Run Trivy scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: weather-aqi-app:latest
+
+    - name: Upload Trivy scan report
       uses: actions/upload-artifact@v2
       with:
-        name: weather-aqi-app-image
-        path: |
-          ./weather-aqi-app-image.tar
+        name: trivy-report
+        path: trivy-report-*.json
 
-  TrivyImageScan:
-    name: Scanning your Container
-    runs-on: ubuntu-22.04
-    needs: BuildingAppImage
-
-    steps:
-      - name: Get current timestamp
-        id: timestamp
-        run: echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
-
-      - name: Download Docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: weather-aqi-app-image
-
-      - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: weather-aqi-app-image:latest
-
-      - name: Load Docker image
-        run: |
-          docker load -i weather-aqi-app-image.tar
-          docker images -a
-
-      - name: Run Trivy scan
-        run: |
-          docker pull aquasec/trivy:latest
-
-          docker run aquasec/trivy:latest image --format json --output $GITHUB_WORKSPACE/trivy-report-${{ env.TIMESTAMP }}.json weather-aqi-app-image:latest
-      
-      - name: Upload Trivy scan report
-        uses: actions/upload-artifact@v2
-        with:
-          name: trivy-report
-          path: trivy-report-*.json
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.CONTAINER_SEC }}
-      
-      - name: Push Container image to GitHub Container Registry
-        run: |
-          docker tag weather-aqi-app:latest ghcr.io/${{ github.repository_owner }}/weather-aqi-app-image:latest
-          docker push ghcr.io/${{ github.repository_owner }}/weather-aqi-app-image:latest
+    - name: Log in to Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.CONTAINER_SEC }}
+    
+    - name: Push Container image to GitHub Container Registry
+      run: |
+        docker tag weather-aqi-app:latest ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+        docker push ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
