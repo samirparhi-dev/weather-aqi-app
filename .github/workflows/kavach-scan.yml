@@ -1,0 +1,108 @@
+name: Security test Suite for Containers (K8s & Containerization)
+
+on:
+  push:
+    branches:
+      - main
+# on:
+#   workflow_dispatch:
+
+jobs:
+  codeql:
+    name: CodeQL Analysis
+    runs-on: self-hosted
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'typescript']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+          
+      # - name: Parse CodeQL Results
+      #   id: parse_results
+      #   run: |
+      #     # Use jq to parse the SARIF file and count the severity levels
+      #     CRITICAL_COUNT=$(jq '[.runs[].results[] | select(.level == "error" and .properties.severity == "critical")] | length' WebGoat_results.sarif)
+      #     HIGH_COUNT=$(jq '[.runs[].results[] | select(.level == "error" and .properties.severity == "high")] | length' WebGoat_results.sarif)
+      #     WARNING_COUNT=$(jq '[.runs[].results[] | select(.level == "warning")] | length' WebGoat_results.sarif)
+
+      #     echo "critical_count=${CRITICAL_COUNT}" >> $GITHUB_ENV
+      #     echo "high_count=${HIGH_COUNT}" >> $GITHUB_ENV
+      #     echo "warning_count=${WARNING_COUNT}" >> $GITHUB_ENV
+
+  BuildContainer:  
+    name: Build The Container
+    runs-on: self-hosted
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Building the Image
+        run: |
+          podman build -t trivy-webgoat:latest .
+      - name: Check The Image for Vulnerability
+        run: |
+          trivy image --format json --output /home/spx7-k8s-deploy/trivy-containerImage-report.json trivy-webgoat:latest
+
+          critical_container_issues=$(jq '.Results[] | select(.Severity == "Critical") | length' /home/spx7-k8s-deploy/trivy-containerImage-report.json)
+
+          if [ "$critical_issues" -gt 0 ]; then
+            echo -e "❌ Container has Some Issues, Needs your Attention "
+            exit 1
+          else
+            echo -e "You Container looks Nice 🎊"
+          fi
+        env:
+          TRIVY_REPORT_JSON: trivy-containerImage-report.json
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Push Container Image
+        run: |
+          podman tag my-image:latest ghcr.io/${{ github.repository_owner }}/trivy-webgoat:latest
+          podman push ghcr.io/${{ github.repository_owner }}/trivy-webgoat:latest    
+
+  TrivyKubernetesScan:  
+    name: K8s Trivy Scanner
+    runs-on: self-hosted
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Check for K8s report Vuln
+        run: |
+          trivy k8s --report summary --format json --output /home/spx7-k8s-deploy/trivy-report.json
+      - name: Fail if Critical Vulnerabilities Found
+        run: |
+          # Check if the report contains critical issues
+          critical_issues=$(jq '.Results[] | select(.Severity == "Critical") | length' /home/spx7-k8s-deploy/trivy-report.json)
+          if [ "$critical_issues" -gt 0 ]; then
+            echo -e "❌ Kubernetes has Some Issues, Needs your Attention "
+            exit 1
+          else
+            echo -e "You Kubernetes cluster looks Nice 🎊"
+          fi
+        env:
+          TRIVY_REPORT_JSON: trivy-k8s-report.json
+      - name: Parse CodeQL Results
+        run: |
+          kubectl create ns monitoring
+          helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
+
