@@ -68,7 +68,7 @@ jobs:
 
     - name: Signing Your Container image
       run: |
-        cosign sign --yes --payload ${{ github.workspace }}/SignedImage-${{ env.TIMESTAMP }}.md --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+        cosign sign --yes --payload SignedImage-${{ env.TIMESTAMP }}.md --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
       env:
         COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
 
