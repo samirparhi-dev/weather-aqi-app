@@ -73,7 +73,7 @@ jobs:
 
     - name: Signing Your Container image
       run: |
-        cosign sign --key ${{ secrets.COSIGN_PRIVATE_KEY }} weather-aqi-app:latest
+        cosign sign --yes --key ${{ secrets.COSIGN_PRIVATE_KEY }} weather-aqi-app:latest
   
     - name: Create Attestation for your Container Image
       run: |
