@@ -1,0 +1,78 @@
+
+name: Security Suite for Containers (K8s & Containerization)
+on:
+  workflow_dispatch:
+
+jobs:
+  ScanProvidedImage:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Get current timestamp
+      id: timestamp
+      run: echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Build Docker image
+      run: |
+        echo $pwd
+        ls
+        docker build -t ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest .
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@0.20.0
+      with:
+        image-ref: 'ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest'
+        format: 'json'
+        output: 'trivy-report-${{ env.TIMESTAMP }}.json'
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.CONTAINER_SEC }}
+
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v3.5.0
+
+    - name: Check install!
+      run: cosign version
+
+    - name: Create Custom Attestation for Siging
+      run: |
+        echo '{
+          "build": {
+            "builder": "GitHub Actions",
+            "commit": "${{ github.sha }}"
+          },
+          "security": {
+            "scanner": "Clair",
+            "status": "clean"
+          }
+        }' > ImageAttestation-${{ env.TIMESTAMP }}.json
+
+    - name: Signing Your Container image
+      run: |
+        cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+      env:
+        COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+  
+    - name: Create Attestation for your Container Image
+      run: |
+        cosign attest --key env://COSIGN_PRIVATE_KEY --predicate-type ImageAttestation-${{ env.TIMESTAMP }}.json ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+      env:
+        COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}      
+
+    - name: Push Container image to GitHub Container Registry
+      run: |
+        docker tag weather-aqi-app:latest ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+        docker push ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+
+    - name: Uploading All Assesment Reports
+      uses: actions/upload-artifact@v2
+      with:
+        name: trivy-report
+        path: '${{ github.workspace }}/*.json'
