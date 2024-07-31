@@ -17,7 +17,6 @@ jobs:
       id: timestamp
       run: |
         echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
-        touch SignedImage-${{ env.TIMESTAMP }}.md
 
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -68,7 +67,7 @@ jobs:
 
     - name: Signing Your Container image
       run: |
-        cosign sign --yes --payload SignedImage-${{ env.TIMESTAMP }}.md --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+        cosign sign --yes --payload signedImage.md --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
       env:
         COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
 
@@ -76,7 +75,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Cosign-Sign
-        path: '${{ github.workspace }}/SignedImage-*.md'
+        path: '${{ github.workspace }}/signedImage.md'
 
     - name: Create Custom Attestation for Siging
       run: |
@@ -89,13 +88,13 @@ jobs:
             "scanner": "Clair",
             "status": "clean"
           }
-        }' > ${{ github.workspace }}/ImageAttestation.json
+        }' > ImageAttestation.json
 
     - name: Uploading Attestation Json
       uses: actions/upload-artifact@v2
       with:
         name: Cosign-Attestation
-        path: '${{ github.workspace }}/ImageAttestation.json'
+        path: 'ImageAttestation.json'
   
     - name: Create Attestation for your Container Image
       run: |
