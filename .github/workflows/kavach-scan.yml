@@ -39,9 +39,6 @@ jobs:
         ls
         docker build -t ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest .
 
-        DIGEST=$(docker inspect --format='{{index .Id}}' ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest)
-        echo "DIGEST=$DIGEST" >> $GITHUB_ENV
-
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.20.0
       with:
