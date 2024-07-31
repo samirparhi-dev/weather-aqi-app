@@ -39,6 +39,10 @@ jobs:
         ls
         docker build -t ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest .
 
+        DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest)
+
+        echo "DIGEST=$DIGEST" >> $GITHUB_ENV
+
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.20.0
       with:
@@ -79,26 +83,32 @@ jobs:
 
     - name: Create Custom Attestation for Siging
       run: |
+        DIGEST=${{ env.DIGEST }}
+        GITHUBSHA=${{ github.sha }}
         echo '{
-          "build": {
-            "builder": "GitHub Actions",
-            "commit": "${{ github.sha }}"
-          },
-          "security": {
-            "scanner": "Clair",
-            "status": "clean"
+        "subject": {
+          "name": "weather-aqi-app:latest",
+          "Owner": "${{ github.repository_owner }}"
+          "digest": {
+            "sha256": "'${DIGEST#*@}'"
+            "gitHub": "'${GITHUBSHA}'"
           }
-        }' > ImageAttestation.json
+        },
+        "predicateType": "https://ls-lrt.com/success/",
+        "predicate": {
+          "buildType": "dockerGitHub Action"
+        }
+        }' > imageAttestation.json
 
     - name: Uploading Attestation Json
       uses: actions/upload-artifact@v2
       with:
         name: Cosign-Attestation
-        path: 'ImageAttestation.json'
+        path: 'imageAttestation.json'
   
     - name: Create Attestation for your Container Image
       run: |
-        cosign attest --key ${{ secrets.COSIGN_PRIVATE_KEY }} --predicate-type ${{ github.workspace }}/ImageAttestation.json ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+        cosign attest --key ${{ secrets.COSIGN_PRIVATE_KEY }} --predicate imageAttestation.json ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
 
     - name: Push Container image to GitHub Container Registry
       run: |
