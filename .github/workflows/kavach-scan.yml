@@ -36,12 +36,12 @@ jobs:
       run: |
         echo $pwd
         ls
-        docker build -t weather-aqi-app:latest .
+        docker build -t ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest .
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.20.0
       with:
-        image-ref: 'weather-aqi-app:latest'
+        image-ref: 'ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest'
         format: 'json'
         output: 'trivy-report-${{ env.TIMESTAMP }}.json'
     
@@ -73,11 +73,13 @@ jobs:
 
     - name: Signing Your Container image
       run: |
-        cosign sign --yes --key ${{ secrets.COSIGN_PRIVATE_KEY }} weather-aqi-app:latest
+        cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+      env:
+        COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
   
     - name: Create Attestation for your Container Image
       run: |
-        cosign attest --key ${{ secrets.COSIGN_PRIVATE_KEY }} --predicate-type ImageAttestation.json weather-aqi-app:latest
+        cosign attest --key ${{ secrets.COSIGN_PRIVATE_KEY }} --predicate-type ImageAttestation.json ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
 
     - name: Push Container image to GitHub Container Registry
       run: |
