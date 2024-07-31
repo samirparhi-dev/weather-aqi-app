@@ -53,11 +53,12 @@ jobs:
         password: ${{ secrets.CONTAINER_SEC }}
 
     - name: Install Cosign
-      run: |
-        wget https://github.com/sigstore/cosign/releases/download/v1.9.1/cosign-linux-amd64 -O /usr/local/bin/cosign
-        chmod +x /usr/local/bin/cosign
+      uses: sigstore/cosign-installer@v3.5.0
 
-    - name: Create Custom Attestation
+    - name: Check install!
+      run: cosign version
+
+    - name: Create Custom Attestation for Siging
       run: |
         echo '{
           "build": {
@@ -68,15 +69,15 @@ jobs:
             "scanner": "Clair",
             "status": "clean"
           }
-        }' > ImageAttestation.json
+        }' > ImageAttestation-${{ env.TIMESTAMP }}.json
 
-    - name: Sign Docker image
+    - name: Signing Your Container image
       run: |
-        cosign sign --key ${{ secrets.COSIGN_PRIVATE_KEY }} ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+        cosign sign --key ${{ secrets.COSIGN_PRIVATE_KEY }} weather-aqi-app:latest
   
-    - name: Create Attestation
+    - name: Create Attestation for your Container Image
       run: |
-        cosign attest --key ${{ secrets.COSIGN_PRIVATE_KEY }} --predicate-type ImageAttestation.json ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+        cosign attest --key ${{ secrets.COSIGN_PRIVATE_KEY }} --predicate-type ImageAttestation.json weather-aqi-app:latest
 
     - name: Push Container image to GitHub Container Registry
       run: |
