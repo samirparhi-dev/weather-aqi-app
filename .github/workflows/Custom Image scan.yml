@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       image-name: # CustomImageName=${{ github.event.inputs.image-name }}#
-        description: 'Name of the container image to attest'
+        description: 'Name of the container image to Scan and attest'
         required: true
         default: 'ghcr.io/samirparhi-dev/weather-aqi-app:latest'
       attestation-file: #use variable as ${{ github.event.inputs.attestation-file }}#

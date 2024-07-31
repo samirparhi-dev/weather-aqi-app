@@ -45,6 +45,12 @@ jobs:
         format: 'json'
         output: 'trivy-report-${{ env.TIMESTAMP }}.json'
     
+    - name: Uploading Trivy Report
+      uses: actions/upload-artifact@v2
+      with:
+        name: trivy-report
+        path: '${{ github.workspace }}/trivy-report*.json'
+    
     - name: Log in to Container Registry
       uses: docker/login-action@v2
       with:
@@ -58,13 +64,17 @@ jobs:
     - name: Check install!
       run: cosign version
 
-
-
     - name: Signing Your Container image
       run: |
-        cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+        cosign sign --yes --payload ${{ github.workspace }}/SignedImage-${{ env.TIMESTAMP }}.md --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
       env:
         COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+
+    - name: Uploading Cosign Sign
+      uses: actions/upload-artifact@v2
+      with:
+        name: Cosign-Sign
+        path: '${{ github.workspace }}/SignedImage-*.md'
 
     - name: Create Custom Attestation for Siging
       run: |
@@ -77,19 +87,20 @@ jobs:
             "scanner": "Clair",
             "status": "clean"
           }
-        }' > ImageAttestation.json
+        }' > ${{ github.workspace }}/ImageAttestation.json
+
+    - name: Uploading Attestation Json
+      uses: actions/upload-artifact@v2
+      with:
+        name: Cosign-Attestation
+        path: '${{ github.workspace }}/ImageAttestation.json'
   
     - name: Create Attestation for your Container Image
       run: |
-        cosign attest --key ${{ secrets.COSIGN_PRIVATE_KEY }} --predicate-type ImageAttestation.json ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+        cosign attest --key ${{ secrets.COSIGN_PRIVATE_KEY }} --predicate-type ${{ github.workspace }}/ImageAttestation.json ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
 
     - name: Push Container image to GitHub Container Registry
       run: |
         docker tag weather-aqi-app:latest ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
         docker push ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
 
-    - name: Uploading All Assesment Reports
-      uses: actions/upload-artifact@v2
-      with:
-        name: trivy-report
-        path: '${{ github.workspace }}/*.json'
