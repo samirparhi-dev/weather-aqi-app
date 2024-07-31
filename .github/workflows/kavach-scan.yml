@@ -15,7 +15,9 @@ jobs:
     steps:
     - name: Get current timestamp
       id: timestamp
-      run: echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+      run: |
+        echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+        mkdir SignedImage-${{ env.TIMESTAMP }}.md
 
     - name: Checkout repository
       uses: actions/checkout@v2
