@@ -1,10 +1,18 @@
 
-name: Security Suite for Containers (K8s & Containerization)
+name: Scan Any Image
 on:
   workflow_dispatch:
-
+    inputs:
+      image-name: # CustomImageName=${{ github.event.inputs.image-name }}#
+        description: 'Name of the container image to attest'
+        required: true
+        default: 'ghcr.io/samirparhi-dev/weather-aqi-app:latest'
+      attestation-file: #use variable as ${{ github.event.inputs.attestation-file }}#
+        description: 'Path to the attestation file'
+        required: true
+        default: 'attestation.json'
 jobs:
-  ScanProvidedImage:
+  ScanAnyImage:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,9 +32,9 @@ jobs:
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.20.0
       with:
-        image-ref: 'ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest'
+        image-ref: '${{ github.event.inputs.image-name }}'
         format: 'json'
-        output: 'trivy-report-${{ env.TIMESTAMP }}.json'
+        output: 'trivy-report-${{ github.event.inputs.image-name }}-${{ env.TIMESTAMP }}.json'
     
     - name: Log in to Container Registry
       uses: docker/login-action@v2

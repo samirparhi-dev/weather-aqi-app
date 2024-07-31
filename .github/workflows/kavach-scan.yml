@@ -58,6 +58,14 @@ jobs:
     - name: Check install!
       run: cosign version
 
+
+
+    - name: Signing Your Container image
+      run: |
+        cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
+      env:
+        COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+
     - name: Create Custom Attestation for Siging
       run: |
         echo '{
@@ -69,13 +77,7 @@ jobs:
             "scanner": "Clair",
             "status": "clean"
           }
-        }' > ImageAttestation-${{ env.TIMESTAMP }}.json
-
-    - name: Signing Your Container image
-      run: |
-        cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
-      env:
-        COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+        }' > ImageAttestation.json
   
     - name: Create Attestation for your Container Image
       run: |
