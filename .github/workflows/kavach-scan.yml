@@ -99,7 +99,7 @@ jobs:
       env:
         DIGEST: ${{ env.DIGEST }}
         GITHUBSHA: ${{ github.sha }}
-        
+
     - name: Uploading Attestation Json
       uses: actions/upload-artifact@v2
       with:
@@ -114,6 +114,4 @@ jobs:
 
     - name: Push Container image to GitHub Container Registry
       run: |
-        docker tag weather-aqi-app:latest ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
         docker push ghcr.io/${{ github.repository_owner }}/weather-aqi-app:latest
-
