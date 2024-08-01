@@ -17,9 +17,8 @@ const WeatherAQI = () => {
   }, []);
 
   const fetchWeather = async (lat, lon) => {
-    const apiKey = process.env.REACT_APP_WEATHER_API_KEY;
     const response = await axios.get(
-      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`
+      `https://api.open-meteo.com/v1/forecast?lat=${lat}&lon=${lon}&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m`
     );
     setWeather(response.data);
   };
