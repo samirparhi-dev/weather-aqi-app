@@ -1,3 +1,5 @@
+[![Security Suite for Containers (K8s & Containerization)](https://github.com/samirparhi-dev/weather-aqi-app/actions/workflows/kavach-scan.yml/badge.svg)](https://github.com/samirparhi-dev/weather-aqi-app/actions/workflows/kavach-scan.yml)
+
 # Weather-aqi-app
 
 A sample app to create and deploy Containers in K8s
