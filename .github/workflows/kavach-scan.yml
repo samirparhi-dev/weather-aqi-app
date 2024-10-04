@@ -50,13 +50,13 @@ jobs:
         output: 'trivy-report-${{ env.TIMESTAMP }}.json'
     
     - name: Uploading Trivy Report
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: trivy-report
         path: '${{ github.workspace }}/trivy-report*.json'
     
     - name: Log in to Container Registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -75,7 +75,7 @@ jobs:
         COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
 
     - name: Uploading Cosign Sign
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Cosign-Sign
         path: '${{ github.workspace }}/signedImage.md'
@@ -101,7 +101,7 @@ jobs:
         GITHUBSHA: ${{ github.sha }}
 
     - name: Uploading Attestation Json
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Cosign-Attestation
         path: 'imageAttestation.json'
