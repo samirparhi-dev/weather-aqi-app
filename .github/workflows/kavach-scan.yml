@@ -10,7 +10,7 @@ on:
 
 jobs:
   BuildingAndScanningAppImage:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
     - name: Get current timestamp
